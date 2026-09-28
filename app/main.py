@@ -5,12 +5,35 @@ from app.core.machine import get_machine_info
 from app.reporting.report_builder import build_report
 from app.core.session_storage import save_session
 
+from app.core.repair import RepairAction, RepairRisk
+from app.core.repair_manager import RepairManager
+from app.core.repairs import analyze_temp_files
+
 from app.ui.menu import (
     show_header,
     show_menu,
     show_sessions,
     open_session,
+    show_repair_menu,
 )
+
+
+def create_repair_manager():
+    manager = RepairManager()
+
+    manager.register(
+        RepairAction(
+            name="Temporary File Analysis",
+            risk=RepairRisk.READ_ONLY,
+            description=(
+                "Analyze Windows temporary files "
+                "without deleting anything."
+            ),
+            function=analyze_temp_files,
+        )
+    )
+
+    return manager
 
 
 def run_diagnostic():
@@ -99,6 +122,11 @@ def run_diagnostic():
     print("=" * 60)
     print("             DIAGNOSTIC COMPLETE")
     print("=" * 60)
+
+    repair_manager = create_repair_manager()
+
+    print()
+    show_repair_menu(repair_manager)
 
 
 def main():

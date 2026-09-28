@@ -40,16 +40,39 @@ def get_battery_info():
         batteries = []
 
         for battery in data:
+
+            runtime = battery.get("EstimatedRunTime")
+
+            # Windows can return invalid/sentinel runtime values.
+            # Only accept positive, realistic runtime estimates.
+            try:
+                runtime = int(runtime)
+
+                if runtime <= 0 or runtime > 1440:
+                    runtime = None
+
+            except (TypeError, ValueError):
+                runtime = None
+
+            charge = battery.get(
+                "EstimatedChargeRemaining"
+            )
+
+            try:
+                charge = int(charge)
+
+                if charge < 0 or charge > 100:
+                    charge = None
+
+            except (TypeError, ValueError):
+                charge = None
+
             batteries.append({
                 "device_id": battery.get("DeviceID"),
                 "name": battery.get("Name"),
                 "status": battery.get("BatteryStatus"),
-                "charge_percent": battery.get(
-                    "EstimatedChargeRemaining"
-                ),
-                "runtime_minutes": battery.get(
-                    "EstimatedRunTime"
-                ),
+                "charge_percent": charge,
+                "runtime_minutes": runtime,
                 "design_capacity": battery.get(
                     "DesignCapacity"
                 ),

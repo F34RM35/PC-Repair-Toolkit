@@ -184,3 +184,105 @@ def open_session():
         print(
             f"Unable to load session: {error}"
         )
+
+def show_repair_menu(manager):
+    print()
+    print("=" * 60)
+    print("             REPAIR ACTIONS")
+    print("=" * 60)
+
+    actions = manager.list_actions()
+
+    if not actions:
+        print()
+        print("No repair actions are currently available.")
+        return
+
+    print()
+
+    for index, action in enumerate(actions, start=1):
+        print(
+            f"{index}. {action.name}"
+        )
+        print(
+            f"   Risk: {action.risk.value}"
+        )
+        print(
+            f"   {action.description}"
+        )
+        print()
+
+    print("0. Return")
+    print()
+
+    choice = input(
+        "Select a repair action: "
+    ).strip()
+
+    if choice == "0":
+        return
+
+    try:
+        index = int(choice) - 1
+
+        if index < 0 or index >= len(actions):
+            print()
+            print("Invalid repair action.")
+            return
+
+    except ValueError:
+        print()
+        print("Please enter a valid number.")
+        return
+
+    action = actions[index]
+
+    print()
+    print("=" * 60)
+    print("             REPAIR ACTION")
+    print("=" * 60)
+
+    print()
+    print(f"Action:      {action.name}")
+    print(f"Risk level:  {action.risk.value}")
+    print(f"Description: {action.description}")
+
+    print()
+
+    if action.risk.value != "READ_ONLY":
+
+        confirmation = input(
+            "This action can modify the system. "
+            "Continue? [y/N]: "
+        ).strip().lower()
+
+        if confirmation != "y":
+            print()
+            print("Repair cancelled.")
+            return
+
+    print()
+    print("Running repair action...")
+
+    result = manager.run(action)
+
+    print()
+    print("RESULT")
+    print("-" * 60)
+    print(f"Status:  {result.status.value}")
+    print(f"Message: {result.message}")
+
+    if result.data:
+        print()
+        print("DATA")
+        print("-" * 60)
+
+        for key, value in result.data.items():
+            print(f"{key}: {value}")
+
+    if result.error:
+        print()
+        print(f"Error: {result.error}")
+
+    print()
+    print("=" * 60)
