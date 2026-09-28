@@ -15,7 +15,6 @@ def main():
     print()
 
     results = manager.run_all()
-
     for result in results.values():
 
         if result.status == DiagnosticStatus.PASS:
@@ -27,14 +26,17 @@ def main():
         elif result.status == DiagnosticStatus.CRITICAL:
             symbol = "[X]"
 
+        elif result.status == DiagnosticStatus.UNKNOWN:
+            symbol = "[?]"
+
         else:
             symbol = "[?]"
 
-        print(
-            f"{symbol} "
-            f"{result.name:20} "
-            f"{result.status.value}"
-        )
+        print(f"{symbol} {result.name:<20} {result.status.value}")
+
+        if result.status != DiagnosticStatus.PASS:
+            if result.message:
+                print(f"    └─ {result.message}")
 
         if result.error:
             print(f"    Error: {result.error}")

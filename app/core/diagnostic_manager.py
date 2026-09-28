@@ -7,6 +7,7 @@ from app.diagnostics.storage import get_storage_info
 from app.diagnostics.drive_health import get_drive_health
 from app.diagnostics.battery import get_battery_info
 from app.diagnostics.battery_health import analyze_battery
+from app.diagnostics.storage_health import analyze_storage
 
 
 class DiagnosticManager:
@@ -29,10 +30,7 @@ class DiagnosticManager:
             get_memory_info
         )
 
-        results["storage"] = self._run(
-            "Storage",
-            get_storage_info
-        )
+        results["storage"] = self._run_storage()
 
         results["drive_health"] = self._run(
             "Drive Health",
@@ -102,7 +100,11 @@ class DiagnosticManager:
                 name="Battery",
                 status=overall_status,
                 data=battery_results,
-                message="Battery health analysis completed."
+                message=" ".join(
+    result.message
+    for result in battery_results
+    if result.message
+)
             )
 
         except Exception as error:
@@ -111,5 +113,60 @@ class DiagnosticManager:
                 status=DiagnosticStatus.UNKNOWN,
                 data=None,
                 message="Battery analysis could not be completed.",
+                error=str(error)
+            )
+
+    def _run_storage(self):
+        try:
+            drives = get_storage_info()
+
+            if not drives:
+                return DiagnosticResult(
+                    name="Storage",
+                    status=DiagnosticStatus.UNKNOWN,
+                    data=None,
+                    message="No storage information detected."
+                )
+
+            storage_results = []
+
+            for drive in drives:
+                result = analyze_storage(drive)
+                storage_results.append(result)
+
+            statuses = [
+                result.status
+                for result in storage_results
+            ]
+
+            if DiagnosticStatus.CRITICAL in statuses:
+                overall_status = DiagnosticStatus.CRITICAL
+
+            elif DiagnosticStatus.WARNING in statuses:
+                overall_status = DiagnosticStatus.WARNING
+
+            elif DiagnosticStatus.UNKNOWN in statuses:
+                overall_status = DiagnosticStatus.UNKNOWN
+
+            else:
+                overall_status = DiagnosticStatus.PASS
+
+            return DiagnosticResult(
+                name="Storage",
+                status=overall_status,
+                data=storage_results,
+               message=" ".join(
+    result.message
+    for result in storage_results
+    if result.message
+)
+            )
+
+        except Exception as error:
+            return DiagnosticResult(
+                name="Storage",
+                status=DiagnosticStatus.UNKNOWN,
+                data=None,
+                message="Storage analysis could not be completed.",
                 error=str(error)
             )
