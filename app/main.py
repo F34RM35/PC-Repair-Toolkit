@@ -7,7 +7,10 @@ from app.core.session_storage import save_session
 
 from app.core.repair import RepairAction, RepairRisk
 from app.core.repair_manager import RepairManager
-from app.core.repairs import analyze_temp_files
+from app.core.repairs import (
+    analyze_temp_files,
+    clean_temp_files,
+)
 
 from app.ui.menu import (
     show_header,
@@ -30,6 +33,18 @@ def create_repair_manager():
                 "without deleting anything."
             ),
             function=analyze_temp_files,
+        )
+    )
+
+    manager.register(
+        RepairAction(
+            name="Clean Temporary Files",
+            risk=RepairRisk.SAFE,
+            description=(
+                "Delete temporary files that are "
+                "no longer in use."
+            ),
+            function=clean_temp_files,
         )
     )
 
