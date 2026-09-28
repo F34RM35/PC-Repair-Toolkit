@@ -1,5 +1,6 @@
 from app.core.diagnostic_manager import DiagnosticManager
 from app.core.result import DiagnosticStatus
+from app.reporting.report_builder import build_report
 
 
 def main():
@@ -15,6 +16,8 @@ def main():
     print()
 
     results = manager.run_all()
+
+    # Display diagnostic results
     for result in results.values():
 
         if result.status == DiagnosticStatus.PASS:
@@ -32,14 +35,33 @@ def main():
         else:
             symbol = "[?]"
 
-        print(f"{symbol} {result.name:<20} {result.status.value}")
+        print(
+            f"{symbol} "
+            f"{result.name:<20} "
+            f"{result.status.value}"
+        )
 
         if result.status != DiagnosticStatus.PASS:
             if result.message:
-                print(f"    └─ {result.message}")
+                print(
+                    f"    └─ {result.message}"
+                )
 
-        if result.error:
-            print(f"    Error: {result.error}")
+    # Build structured diagnostic report
+    report = build_report(results)
+
+    print()
+    print("=" * 60)
+    print("             DIAGNOSTIC SUMMARY")
+    print("=" * 60)
+
+    summary = report["summary"]
+
+    print(f"Total Diagnostics: {summary['total']}")
+    print(f"PASS:              {summary['pass']}")
+    print(f"WARNING:           {summary['warning']}")
+    print(f"CRITICAL:          {summary['critical']}")
+    print(f"UNKNOWN:           {summary['unknown']}")
 
     print()
     print("=" * 60)
