@@ -1,10 +1,43 @@
 from datetime import datetime
+from dataclasses import asdict, is_dataclass
+from enum import Enum
+
 from app.core.result import DiagnosticStatus
 
 
-def build_report(results):
+def make_json_safe(value):
+    """
+    Convert diagnostic data into values that can be saved as JSON.
+    """
+
+    if is_dataclass(value):
+        return make_json_safe(asdict(value))
+
+    if isinstance(value, Enum):
+        return value.value
+
+    if isinstance(value, dict):
+        return {
+            str(key): make_json_safe(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, (list, tuple)):
+        return [
+            make_json_safe(item)
+            for item in value
+        ]
+
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+
+    return str(value)
+
+
+def build_report(results, session=None):
     report = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "session": make_json_safe(session),
         "diagnostics": [],
         "summary": {
             "total": 0,
@@ -23,7 +56,7 @@ def build_report(results):
             "name": result.name,
             "status": status.value,
             "message": result.message,
-            "data": result.data,
+            "data": make_json_safe(result.data),
             "error": result.error
         }
 

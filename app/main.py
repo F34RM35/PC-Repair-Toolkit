@@ -1,15 +1,42 @@
 from app.core.diagnostic_manager import DiagnosticManager
 from app.core.result import DiagnosticStatus
+from app.core.session import create_session
+from app.core.machine import get_machine_info
 from app.reporting.report_builder import build_report
+from app.core.session_storage import save_session
+
+from app.ui.menu import (
+    show_header,
+    show_menu,
+    show_sessions,
+    open_session,
+)
 
 
-def main():
+def run_diagnostic():
+    print()
     print("=" * 60)
-    print("             PC REPAIR TOOLKIT")
-    print("                    V0.1")
+    print("             NEW DIAGNOSTIC")
     print("=" * 60)
+
+    machine = get_machine_info()
+    session = create_session(machine)
 
     manager = DiagnosticManager()
+
+    print()
+    print("REPAIR SESSION")
+    print("-" * 60)
+    print(f"Session ID: {session['session_id']}")
+    print(f"Started:    {session['started_at']}")
+
+    print()
+    print("MACHINE")
+    print("-" * 60)
+    print(f"Hostname:     {machine['hostname']}")
+    print(f"OS:           {machine['operating_system']}")
+    print(f"OS Build:     {machine['os_version']}")
+    print(f"Architecture: {machine['architecture']}")
 
     print()
     print("Running diagnostics...")
@@ -17,7 +44,6 @@ def main():
 
     results = manager.run_all()
 
-    # Display diagnostic results
     for result in results.values():
 
         if result.status == DiagnosticStatus.PASS:
@@ -28,9 +54,6 @@ def main():
 
         elif result.status == DiagnosticStatus.CRITICAL:
             symbol = "[X]"
-
-        elif result.status == DiagnosticStatus.UNKNOWN:
-            symbol = "[?]"
 
         else:
             symbol = "[?]"
@@ -47,8 +70,14 @@ def main():
                     f"    └─ {result.message}"
                 )
 
-    # Build structured diagnostic report
-    report = build_report(results)
+    report = build_report(
+        results,
+        session
+    )
+
+    saved_file = save_session(
+        report
+    )
 
     print()
     print("=" * 60)
@@ -64,9 +93,59 @@ def main():
     print(f"UNKNOWN:           {summary['unknown']}")
 
     print()
+    print(f"Report saved: {saved_file}")
+
+    print()
     print("=" * 60)
     print("             DIAGNOSTIC COMPLETE")
     print("=" * 60)
+
+
+def main():
+
+    while True:
+
+        show_header()
+        show_menu()
+
+        choice = input(
+            "Select an option: "
+        ).strip()
+
+        if choice == "1":
+
+            run_diagnostic()
+
+            input(
+                "\nPress Enter to return to the main menu..."
+            )
+
+        elif choice == "2":
+
+            show_sessions()
+
+            input(
+                "\nPress Enter to return to the main menu..."
+            )
+
+        elif choice == "3":
+
+            open_session()
+
+            input(
+                "\nPress Enter to return to the main menu..."
+            )
+
+        elif choice == "4":
+
+            print()
+            print("Exiting PC Repair Toolkit...")
+            break
+
+        else:
+
+            print()
+            print("Invalid option. Please select 1-4.")
 
 
 if __name__ == "__main__":
