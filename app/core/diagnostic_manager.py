@@ -6,8 +6,10 @@ from app.diagnostics.memory import get_memory_info
 from app.diagnostics.storage import get_storage_info
 from app.diagnostics.drive_health import get_drive_health
 from app.diagnostics.battery import get_battery_info
+
 from app.diagnostics.battery_health import analyze_battery
 from app.diagnostics.storage_health import analyze_storage
+from app.diagnostics.drive_health_analyzer import analyze_drive_health
 
 
 class DiagnosticManager:
@@ -32,10 +34,7 @@ class DiagnosticManager:
 
         results["storage"] = self._run_storage()
 
-        results["drive_health"] = self._run(
-            "Drive Health",
-            get_drive_health
-        )
+        results["drive_health"] = self._run_drive_health()
 
         results["battery"] = self._run_battery()
 
@@ -96,15 +95,17 @@ class DiagnosticManager:
             else:
                 overall_status = DiagnosticStatus.PASS
 
+            message = " ".join(
+                result.message
+                for result in battery_results
+                if result.message
+            )
+
             return DiagnosticResult(
                 name="Battery",
                 status=overall_status,
                 data=battery_results,
-                message=" ".join(
-    result.message
-    for result in battery_results
-    if result.message
-)
+                message=message
             )
 
         except Exception as error:
@@ -151,15 +152,17 @@ class DiagnosticManager:
             else:
                 overall_status = DiagnosticStatus.PASS
 
+            message = " ".join(
+                result.message
+                for result in storage_results
+                if result.message
+            )
+
             return DiagnosticResult(
                 name="Storage",
                 status=overall_status,
                 data=storage_results,
-               message=" ".join(
-    result.message
-    for result in storage_results
-    if result.message
-)
+                message=message
             )
 
         except Exception as error:
@@ -168,5 +171,62 @@ class DiagnosticManager:
                 status=DiagnosticStatus.UNKNOWN,
                 data=None,
                 message="Storage analysis could not be completed.",
+                error=str(error)
+            )
+
+    def _run_drive_health(self):
+        try:
+            drives = get_drive_health()
+
+            if not drives:
+                return DiagnosticResult(
+                    name="Drive Health",
+                    status=DiagnosticStatus.UNKNOWN,
+                    data=None,
+                    message="No drive health information detected."
+                )
+
+            drive_results = []
+
+            for drive in drives:
+                result = analyze_drive_health(drive)
+                drive_results.append(result)
+
+            statuses = [
+                result.status
+                for result in drive_results
+            ]
+
+            if DiagnosticStatus.CRITICAL in statuses:
+                overall_status = DiagnosticStatus.CRITICAL
+
+            elif DiagnosticStatus.WARNING in statuses:
+                overall_status = DiagnosticStatus.WARNING
+
+            elif DiagnosticStatus.UNKNOWN in statuses:
+                overall_status = DiagnosticStatus.UNKNOWN
+
+            else:
+                overall_status = DiagnosticStatus.PASS
+
+            message = " ".join(
+                result.message
+                for result in drive_results
+                if result.message
+            )
+
+            return DiagnosticResult(
+                name="Drive Health",
+                status=overall_status,
+                data=drive_results,
+                message=message
+            )
+
+        except Exception as error:
+            return DiagnosticResult(
+                name="Drive Health",
+                status=DiagnosticStatus.UNKNOWN,
+                data=None,
+                message="Drive health analysis could not be completed.",
                 error=str(error)
             )
