@@ -6,6 +6,7 @@ from app.diagnostics.memory import get_memory_info
 from app.diagnostics.storage import get_storage_info
 from app.diagnostics.drive_health import get_drive_health
 from app.diagnostics.battery import get_battery_info
+from app.diagnostics.battery_health import analyze_battery
 
 
 class DiagnosticManager:
@@ -38,10 +39,7 @@ class DiagnosticManager:
             get_drive_health
         )
 
-        results["battery"] = self._run(
-            "Battery",
-            get_battery_info
-        )
+        results["battery"] = self._run_battery()
 
         return results
 
@@ -62,5 +60,56 @@ class DiagnosticManager:
                 status=DiagnosticStatus.UNKNOWN,
                 data=None,
                 message="Diagnostic could not be completed.",
+                error=str(error)
+            )
+
+    def _run_battery(self):
+        try:
+            batteries = get_battery_info()
+
+            if not batteries:
+                return DiagnosticResult(
+                    name="Battery",
+                    status=DiagnosticStatus.UNKNOWN,
+                    data=None,
+                    message="No battery information detected."
+                )
+
+            battery_results = []
+
+            for battery in batteries:
+                result = analyze_battery(battery)
+                battery_results.append(result)
+
+            statuses = [
+                result.status
+                for result in battery_results
+            ]
+
+            if DiagnosticStatus.CRITICAL in statuses:
+                overall_status = DiagnosticStatus.CRITICAL
+
+            elif DiagnosticStatus.WARNING in statuses:
+                overall_status = DiagnosticStatus.WARNING
+
+            elif DiagnosticStatus.UNKNOWN in statuses:
+                overall_status = DiagnosticStatus.UNKNOWN
+
+            else:
+                overall_status = DiagnosticStatus.PASS
+
+            return DiagnosticResult(
+                name="Battery",
+                status=overall_status,
+                data=battery_results,
+                message="Battery health analysis completed."
+            )
+
+        except Exception as error:
+            return DiagnosticResult(
+                name="Battery",
+                status=DiagnosticStatus.UNKNOWN,
+                data=None,
+                message="Battery analysis could not be completed.",
                 error=str(error)
             )
