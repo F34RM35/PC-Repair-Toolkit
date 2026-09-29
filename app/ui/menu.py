@@ -1,5 +1,7 @@
-from app.core import result
-from app.core.session_storage import list_sessions, load_session
+from app.core.session_storage import (
+    list_sessions,
+    load_session,
+)
 
 
 def show_header():
@@ -20,7 +22,9 @@ def show_menu():
 
 
 def get_choice():
-    return input("Select an option: ").strip()
+    return input(
+        "Select an option: "
+    ).strip()
 
 
 def show_sessions():
@@ -42,7 +46,9 @@ def show_sessions():
         sessions,
         start=1
     ):
-        print(f"{index}. {session_file.stem}")
+        print(
+            f"{index}. {session_file.stem}"
+        )
 
     print()
 
@@ -66,7 +72,9 @@ def open_session():
         sessions,
         start=1
     ):
-        print(f"{index}. {session_file.stem}")
+        print(
+            f"{index}. {session_file.stem}"
+        )
 
     print()
     print("Enter the session number or full Session ID.")
@@ -105,11 +113,25 @@ def open_session():
     session_id = selected_file.stem
 
     try:
-        report = load_session(session_id)
 
-        session = report.get("session", {})
-        machine = session.get("machine", {})
-        summary = report.get("summary", {})
+        report = load_session(
+            session_id
+        )
+
+        session = report.get(
+            "session",
+            {}
+        )
+
+        machine = session.get(
+            "machine",
+            {}
+        )
+
+        summary = report.get(
+            "summary",
+            {}
+        )
 
         print()
         print("=" * 60)
@@ -117,27 +139,38 @@ def open_session():
         print("=" * 60)
 
         print()
-        print(f"Session ID: {session.get('session_id')}")
-        print(f"Started:    {session.get('started_at')}")
+        print(
+            f"Session ID: "
+            f"{session.get('session_id')}"
+        )
+
+        print(
+            f"Started:    "
+            f"{session.get('started_at')}"
+        )
 
         print()
         print("MACHINE")
         print("-" * 60)
 
         print(
-            f"Hostname:     {machine.get('hostname')}"
+            f"Hostname:     "
+            f"{machine.get('hostname')}"
         )
 
         print(
-            f"OS:           {machine.get('operating_system')}"
+            f"OS:           "
+            f"{machine.get('operating_system')}"
         )
 
         print(
-            f"OS Build:     {machine.get('os_version')}"
+            f"OS Build:     "
+            f"{machine.get('os_version')}"
         )
 
         print(
-            f"Architecture: {machine.get('architecture')}"
+            f"Architecture: "
+            f"{machine.get('architecture')}"
         )
 
         print()
@@ -145,48 +178,188 @@ def open_session():
         print("-" * 60)
 
         print(
-            f"Total:     {summary.get('total', 0)}"
+            f"Total:     "
+            f"{summary.get('total', 0)}"
         )
 
         print(
-            f"PASS:      {summary.get('pass', 0)}"
+            f"PASS:      "
+            f"{summary.get('pass', 0)}"
         )
 
         print(
-            f"WARNING:   {summary.get('warning', 0)}"
+            f"WARNING:   "
+            f"{summary.get('warning', 0)}"
         )
 
         print(
-            f"CRITICAL:  {summary.get('critical', 0)}"
+            f"CRITICAL:  "
+            f"{summary.get('critical', 0)}"
         )
 
         print(
-            f"UNKNOWN:   {summary.get('unknown', 0)}"
+            f"UNKNOWN:   "
+            f"{summary.get('unknown', 0)}"
         )
 
         print()
         print("DIAGNOSTICS")
         print("-" * 60)
 
-        for diagnostic in report.get(
+        diagnostics = report.get(
             "diagnostics",
             []
-        ):
+        )
+
+        if not diagnostics:
+
+            print()
+            print("No diagnostic results recorded.")
+
+        else:
+
+            for diagnostic in diagnostics:
+
+                print(
+                    f"{diagnostic.get('name', 'Unknown'):<20}"
+                    f"{diagnostic.get('status', 'UNKNOWN')}"
+                )
+
+                message = diagnostic.get(
+                    "message"
+                )
+
+                if message:
+
+                    print(
+                        f"    {message}"
+                    )
+
+        # ----------------------------------------------------
+        # REPAIR HISTORY
+        # ----------------------------------------------------
+
+        print()
+        print("REPAIR HISTORY")
+        print("-" * 60)
+
+        repairs = session.get(
+            "repairs",
+            []
+        )
+
+        if not repairs:
+
+            print()
             print(
-                f"{diagnostic.get('name'):<20}"
-                f"{diagnostic.get('status')}"
+                "No repair actions were performed."
             )
+
+        else:
+
+            print()
+
+            for index, repair in enumerate(
+                repairs,
+                start=1
+            ):
+
+                print(
+                    f"{index}. "
+                    f"{repair.get('name', 'Unknown Repair')}"
+                )
+
+                print(
+                    f"   Risk:       "
+                    f"{repair.get('risk', 'UNKNOWN')}"
+                )
+
+                print(
+                    f"   Status:     "
+                    f"{repair.get('status', 'UNKNOWN')}"
+                )
+
+                print(
+                    f"   Started:    "
+                    f"{repair.get('started_at', 'Unknown')}"
+                )
+
+                print(
+                    f"   Completed:  "
+                    f"{repair.get('completed_at', 'Unknown')}"
+                )
+
+                print(
+                    f"   Duration:   "
+                    f"{repair.get('duration_seconds', 'Unknown')} "
+                    f"seconds"
+                )
+
+                message = repair.get(
+                    "message"
+                )
+
+                if message:
+
+                    print(
+                        f"   Message:    "
+                        f"{message}"
+                    )
+
+                data = repair.get(
+                    "data"
+                )
+
+                if isinstance(
+                    data,
+                    dict
+                ):
+
+                    print()
+                    print(
+                        "   Result:"
+                    )
+
+                    for key, value in data.items():
+
+                        print(
+                            f"   {key}: {value}"
+                        )
+
+                elif data is not None:
+
+                    print()
+                    print(
+                        f"   Result:     {data}"
+                    )
+
+                error = repair.get(
+                    "error"
+                )
+
+                if error:
+
+                    print()
+                    print(
+                        f"   Error:      "
+                        f"{error}"
+                    )
+
+                print()
 
         print()
         print("=" * 60)
 
     except Exception as error:
+
         print()
         print(
             f"Unable to load session: {error}"
         )
 
+
 def show_repair_menu(manager):
+
     print()
     print("=" * 60)
     print("             REPAIR ACTIONS")
@@ -195,22 +368,33 @@ def show_repair_menu(manager):
     actions = manager.list_actions()
 
     if not actions:
+
         print()
-        print("No repair actions are currently available.")
-        return
+        print(
+            "No repair actions are currently available."
+        )
+
+        return None
 
     print()
 
-    for index, action in enumerate(actions, start=1):
+    for index, action in enumerate(
+        actions,
+        start=1
+    ):
+
         print(
             f"{index}. {action.name}"
         )
+
         print(
             f"   Risk: {action.risk.value}"
         )
+
         print(
             f"   {action.description}"
         )
+
         print()
 
     print("0. Return")
@@ -221,20 +405,29 @@ def show_repair_menu(manager):
     ).strip()
 
     if choice == "0":
-        return
+        return None
 
     try:
+
         index = int(choice) - 1
 
         if index < 0 or index >= len(actions):
+
             print()
-            print("Invalid repair action.")
-            return
+            print(
+                "Invalid repair action."
+            )
+
+            return None
 
     except ValueError:
+
         print()
-        print("Please enter a valid number.")
-        return
+        print(
+            "Please enter a valid number."
+        )
+
+        return None
 
     action = actions[index]
 
@@ -244,9 +437,20 @@ def show_repair_menu(manager):
     print("=" * 60)
 
     print()
-    print(f"Action:      {action.name}")
-    print(f"Risk level:  {action.risk.value}")
-    print(f"Description: {action.description}")
+    print(
+        f"Action:      "
+        f"{action.name}"
+    )
+
+    print(
+        f"Risk level:  "
+        f"{action.risk.value}"
+    )
+
+    print(
+        f"Description: "
+        f"{action.description}"
+    )
 
     print()
 
@@ -258,34 +462,68 @@ def show_repair_menu(manager):
         ).strip().lower()
 
         if confirmation != "y":
+
             print()
-            print("Repair cancelled.")
-            return
+            print(
+                "Repair cancelled."
+            )
+
+            return None
 
     print()
-    print("Running repair action...")
+    print(
+        "Running repair action..."
+    )
 
-    result = manager.run(action)
+    result = manager.run(
+        action
+    )
 
     print()
     print("RESULT")
     print("-" * 60)
-    print(f"Status:  {result.status.value}")
-    print(f"Message: {result.message}")
+
+    print(
+        f"Status:  "
+        f"{result.status.value}"
+    )
+
+    print(
+        f"Message: "
+        f"{result.message}"
+    )
 
     if result.data:
+
         print()
         print("DATA")
         print("-" * 60)
 
-        for key, value in result.data.items():
-            print(f"{key}: {value}")
+        if isinstance(
+            result.data,
+            dict
+        ):
+
+            for key, value in result.data.items():
+
+                print(
+                    f"{key}: {value}"
+                )
+
+        else:
+
+            print(
+                result.data
+            )
 
     if result.error:
+
         print()
-        print(f"Error: {result.error}")
+        print(
+            f"Error: {result.error}"
+        )
 
     print()
     print("=" * 60)
-    
+
     return result
