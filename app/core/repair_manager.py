@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .repair import (
     RepairAction,
     RepairResult,
@@ -18,22 +20,57 @@ class RepairManager:
 
     def run(self, action: RepairAction):
 
+        started = datetime.now()
+
+        result = RepairResult(
+            name=action.name,
+            status=RepairStatus.RUNNING,
+            risk=action.risk,
+            started_at=started.isoformat(
+                timespec="seconds"
+            ),
+        )
+
         try:
 
-            result = action.function()
+            data = action.function()
 
-            return RepairResult(
-                name=action.name,
-                status=RepairStatus.COMPLETED,
-                message="Repair action completed successfully.",
-                data=result,
+            completed = datetime.now()
+
+            result.status = RepairStatus.COMPLETED
+            result.message = (
+                "Repair action completed successfully."
             )
+            result.data = data
+            result.completed_at = completed.isoformat(
+                timespec="seconds"
+            )
+            result.duration_seconds = round(
+                (
+                    completed - started
+                ).total_seconds(),
+                2
+            )
+
+            return result
 
         except Exception as error:
 
-            return RepairResult(
-                name=action.name,
-                status=RepairStatus.FAILED,
-                message="Repair action failed.",
-                error=str(error),
+            completed = datetime.now()
+
+            result.status = RepairStatus.FAILED
+            result.message = (
+                "Repair action failed."
             )
+            result.error = str(error)
+            result.completed_at = completed.isoformat(
+                timespec="seconds"
+            )
+            result.duration_seconds = round(
+                (
+                    completed - started
+                ).total_seconds(),
+                2
+            )
+
+            return result
