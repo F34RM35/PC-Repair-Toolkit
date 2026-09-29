@@ -10,7 +10,9 @@ from app.core.session_storage import (
 
 from app.core.repairs import (
     analyze_temp_files,
+    analyze_disk_cleanup,
     clean_temp_files,
+    clean_windows_update_cache,
 )
 
 from app.core.repair import (
@@ -30,7 +32,12 @@ from app.ui.menu import (
 
 
 def create_repair_manager():
+
     manager = RepairManager()
+
+    # --------------------------------------------------------
+    # READ-ONLY: TEMPORARY FILE ANALYSIS
+    # --------------------------------------------------------
 
     manager.register(
         RepairAction(
@@ -43,6 +50,42 @@ def create_repair_manager():
             function=analyze_temp_files,
         )
     )
+
+    # --------------------------------------------------------
+    # READ-ONLY: DISK CLEANUP ANALYSIS
+    # --------------------------------------------------------
+
+    manager.register(
+        RepairAction(
+            name="Disk Cleanup Analysis",
+            risk=RepairRisk.READ_ONLY,
+            description=(
+                "Analyze common Windows cleanup "
+                "locations without deleting anything."
+            ),
+            function=analyze_disk_cleanup,
+        )
+    )
+
+    # --------------------------------------------------------
+    # SAFE: WINDOWS UPDATE CACHE CLEANUP
+    # --------------------------------------------------------
+
+    manager.register(
+        RepairAction(
+            name="Clean Windows Update Cache",
+            risk=RepairRisk.SAFE,
+            description=(
+                "Delete downloaded Windows Update "
+                "cache files that are no longer needed."
+            ),
+            function=clean_windows_update_cache,
+        )
+    )
+
+    # --------------------------------------------------------
+    # SAFE: USER TEMP CLEANUP
+    # --------------------------------------------------------
 
     manager.register(
         RepairAction(
@@ -60,6 +103,7 @@ def create_repair_manager():
 
 
 def run_diagnostic():
+
     print()
     print("=" * 60)
     print("             NEW DIAGNOSTIC")
@@ -73,9 +117,11 @@ def run_diagnostic():
     print()
     print("REPAIR SESSION")
     print("-" * 60)
+
     print(
         f"Session ID: {session['session_id']}"
     )
+
     print(
         f"Started:    {session['started_at']}"
     )
@@ -85,19 +131,23 @@ def run_diagnostic():
     print("-" * 60)
 
     print(
-        f"Hostname:     {machine['hostname']}"
+        f"Hostname:     "
+        f"{machine['hostname']}"
     )
 
     print(
-        f"OS:           {machine['operating_system']}"
+        f"OS:           "
+        f"{machine['operating_system']}"
     )
 
     print(
-        f"OS Build:     {machine['os_version']}"
+        f"OS Build:     "
+        f"{machine['os_version']}"
     )
 
     print(
-        f"Architecture: {machine['architecture']}"
+        f"Architecture: "
+        f"{machine['architecture']}"
     )
 
     print()
@@ -129,6 +179,7 @@ def run_diagnostic():
         if result.status != DiagnosticStatus.PASS:
 
             if result.message:
+
                 print(
                     f"    └─ {result.message}"
                 )
@@ -158,23 +209,28 @@ def run_diagnostic():
     summary = report["summary"]
 
     print(
-        f"Total Diagnostics: {summary['total']}"
+        f"Total Diagnostics: "
+        f"{summary['total']}"
     )
 
     print(
-        f"PASS:              {summary['pass']}"
+        f"PASS:              "
+        f"{summary['pass']}"
     )
 
     print(
-        f"WARNING:           {summary['warning']}"
+        f"WARNING:           "
+        f"{summary['warning']}"
     )
 
     print(
-        f"CRITICAL:          {summary['critical']}"
+        f"CRITICAL:          "
+        f"{summary['critical']}"
     )
 
     print(
-        f"UNKNOWN:           {summary['unknown']}"
+        f"UNKNOWN:           "
+        f"{summary['unknown']}"
     )
 
     print()
@@ -194,6 +250,7 @@ def run_diagnostic():
     repair_manager = create_repair_manager()
 
     print()
+
     repair_result = show_repair_menu(
         repair_manager
     )

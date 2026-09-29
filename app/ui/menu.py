@@ -53,6 +53,76 @@ def show_sessions():
     print()
 
 
+def _print_data(
+    data,
+    indent=0
+):
+    """
+    Display nested repair data in a readable format.
+    """
+
+    prefix = " " * indent
+
+    if isinstance(data, dict):
+
+        for key, value in data.items():
+
+            label = str(key).replace(
+                "_",
+                " "
+            ).title()
+
+            if isinstance(value, (dict, list)):
+
+                print(
+                    f"{prefix}{label}:"
+                )
+
+                _print_data(
+                    value,
+                    indent + 4
+                )
+
+            else:
+
+                print(
+                    f"{prefix}{label}: {value}"
+                )
+
+    elif isinstance(data, list):
+
+        for index, item in enumerate(
+            data,
+            start=1
+        ):
+
+            if isinstance(
+                item,
+                dict
+            ):
+
+                print(
+                    f"{prefix}{index}."
+                )
+
+                _print_data(
+                    item,
+                    indent + 4
+                )
+
+            else:
+
+                print(
+                    f"{prefix}{index}. {item}"
+                )
+
+    else:
+
+        print(
+            f"{prefix}{data}"
+        )
+
+
 def open_session():
     sessions = list_sessions()
 
@@ -77,7 +147,9 @@ def open_session():
         )
 
     print()
-    print("Enter the session number or full Session ID.")
+    print(
+        "Enter the session number or full Session ID."
+    )
     print()
 
     choice = input(
@@ -86,8 +158,12 @@ def open_session():
 
     selected_file = None
 
-    # Try selecting by number first
+    # --------------------------------------------------------
+    # Try selecting by number
+    # --------------------------------------------------------
+
     try:
+
         index = int(choice) - 1
 
         if 0 <= index < len(sessions):
@@ -96,16 +172,21 @@ def open_session():
     except ValueError:
         pass
 
-    # If it wasn't a number, try Session ID
+    # --------------------------------------------------------
+    # Try selecting by Session ID
+    # --------------------------------------------------------
+
     if selected_file is None:
 
         for session_file in sessions:
 
             if session_file.stem.lower() == choice.lower():
+
                 selected_file = session_file
                 break
 
     if selected_file is None:
+
         print()
         print("Session not found.")
         return
@@ -133,12 +214,17 @@ def open_session():
             {}
         )
 
+        # ----------------------------------------------------
+        # SESSION HEADER
+        # ----------------------------------------------------
+
         print()
         print("=" * 60)
         print("             REPAIR SESSION")
         print("=" * 60)
 
         print()
+
         print(
             f"Session ID: "
             f"{session.get('session_id')}"
@@ -148,6 +234,10 @@ def open_session():
             f"Started:    "
             f"{session.get('started_at')}"
         )
+
+        # ----------------------------------------------------
+        # MACHINE
+        # ----------------------------------------------------
 
         print()
         print("MACHINE")
@@ -172,6 +262,10 @@ def open_session():
             f"Architecture: "
             f"{machine.get('architecture')}"
         )
+
+        # ----------------------------------------------------
+        # DIAGNOSTIC SUMMARY
+        # ----------------------------------------------------
 
         print()
         print("DIAGNOSTIC SUMMARY")
@@ -202,6 +296,10 @@ def open_session():
             f"{summary.get('unknown', 0)}"
         )
 
+        # ----------------------------------------------------
+        # DIAGNOSTICS
+        # ----------------------------------------------------
+
         print()
         print("DIAGNOSTICS")
         print("-" * 60)
@@ -214,7 +312,9 @@ def open_session():
         if not diagnostics:
 
             print()
-            print("No diagnostic results recorded.")
+            print(
+                "No diagnostic results recorded."
+            )
 
         else:
 
@@ -310,27 +410,16 @@ def open_session():
                     "data"
                 )
 
-                if isinstance(
-                    data,
-                    dict
-                ):
+                if data is not None:
 
                     print()
                     print(
                         "   Result:"
                     )
 
-                    for key, value in data.items():
-
-                        print(
-                            f"   {key}: {value}"
-                        )
-
-                elif data is not None:
-
-                    print()
-                    print(
-                        f"   Result:     {data}"
+                    _print_data(
+                        data,
+                        indent=3
                     )
 
                 error = repair.get(
@@ -437,6 +526,7 @@ def show_repair_menu(manager):
     print("=" * 60)
 
     print()
+
     print(
         f"Action:      "
         f"{action.name}"
@@ -453,6 +543,8 @@ def show_repair_menu(manager):
     )
 
     print()
+
+    confirmation = None
 
     if action.risk.value != "READ_ONLY":
 
@@ -476,12 +568,12 @@ def show_repair_menu(manager):
     )
 
     result = manager.run(
-    action,
-    confirmed=(
-        action.risk.value == "READ_ONLY"
-        or confirmation == "y"
+        action,
+        confirmed=(
+            action.risk.value == "READ_ONLY"
+            or confirmation == "y"
+        )
     )
-)
 
     print()
     print("RESULT")
@@ -497,28 +589,15 @@ def show_repair_menu(manager):
         f"{result.message}"
     )
 
-    if result.data:
+    if result.data is not None:
 
         print()
         print("DATA")
         print("-" * 60)
 
-        if isinstance(
-            result.data,
-            dict
-        ):
-
-            for key, value in result.data.items():
-
-                print(
-                    f"{key}: {value}"
-                )
-
-        else:
-
-            print(
-                result.data
-            )
+        _print_data(
+            result.data
+        )
 
     if result.error:
 
