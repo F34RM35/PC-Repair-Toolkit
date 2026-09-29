@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .repair import (
     RepairAction,
     RepairResult,
@@ -32,6 +34,10 @@ class RepairManager:
 
         if action not in self.actions:
 
+            now = datetime.now().isoformat(
+                timespec="seconds"
+            )
+
             return RepairResult(
                 name=action.name,
                 status=RepairStatus.FAILED,
@@ -40,6 +46,10 @@ class RepairManager:
                     "The requested repair action "
                     "is not registered with this manager."
                 ),
+                risk=action.risk,
+                started_at=now,
+                completed_at=now,
+                duration_seconds=0.0,
             )
 
         # ----------------------------------------------------
@@ -50,6 +60,10 @@ class RepairManager:
 
             if not confirmed:
 
+                now = datetime.now().isoformat(
+                    timespec="seconds"
+                )
+
                 return RepairResult(
                     name=action.name,
                     status=RepairStatus.CANCELLED,
@@ -57,15 +71,31 @@ class RepairManager:
                         "Repair action requires "
                         "explicit confirmation."
                     ),
+                    risk=action.risk,
+                    started_at=now,
+                    completed_at=now,
+                    duration_seconds=0.0,
                 )
 
         # ----------------------------------------------------
-        # Execute repair
+        # Start execution
         # ----------------------------------------------------
+
+        started = datetime.now()
+
+        started_at = started.isoformat(
+            timespec="seconds"
+        )
 
         try:
 
             result = action.function()
+
+            completed = datetime.now()
+
+            duration = (
+                completed - started
+            ).total_seconds()
 
             return RepairResult(
                 name=action.name,
@@ -74,13 +104,37 @@ class RepairManager:
                     "Repair action completed successfully."
                 ),
                 data=result,
+                risk=action.risk,
+                started_at=started_at,
+                completed_at=completed.isoformat(
+                    timespec="seconds"
+                ),
+                duration_seconds=round(
+                    duration,
+                    3
+                ),
             )
 
         except Exception as error:
+
+            completed = datetime.now()
+
+            duration = (
+                completed - started
+            ).total_seconds()
 
             return RepairResult(
                 name=action.name,
                 status=RepairStatus.FAILED,
                 message="Repair action failed.",
                 error=str(error),
+                risk=action.risk,
+                started_at=started_at,
+                completed_at=completed.isoformat(
+                    timespec="seconds"
+                ),
+                duration_seconds=round(
+                    duration,
+                    3
+                ),
             )
