@@ -476,8 +476,12 @@ def show_repair_menu(manager):
     )
 
     result = manager.run(
-        action
+    action,
+    confirmed=(
+        action.risk.value == "READ_ONLY"
+        or confirmation == "y"
     )
+)
 
     print()
     print("RESULT")

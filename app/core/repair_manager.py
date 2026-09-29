@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from .repair import (
     RepairAction,
     RepairResult,
+    RepairRisk,
     RepairStatus,
 )
 
@@ -12,65 +11,76 @@ class RepairManager:
     def __init__(self):
         self.actions = []
 
-    def register(self, action: RepairAction):
+    def register(
+        self,
+        action: RepairAction
+    ):
         self.actions.append(action)
 
     def list_actions(self):
         return self.actions
 
-    def run(self, action: RepairAction):
+    def run(
+        self,
+        action: RepairAction,
+        confirmed: bool = False
+    ):
 
-        started = datetime.now()
+        # ----------------------------------------------------
+        # Validate action
+        # ----------------------------------------------------
 
-        result = RepairResult(
-            name=action.name,
-            status=RepairStatus.RUNNING,
-            risk=action.risk,
-            started_at=started.isoformat(
-                timespec="seconds"
-            ),
-        )
+        if action not in self.actions:
+
+            return RepairResult(
+                name=action.name,
+                status=RepairStatus.FAILED,
+                message="Repair action is not registered.",
+                error=(
+                    "The requested repair action "
+                    "is not registered with this manager."
+                ),
+            )
+
+        # ----------------------------------------------------
+        # Safety enforcement
+        # ----------------------------------------------------
+
+        if action.risk != RepairRisk.READ_ONLY:
+
+            if not confirmed:
+
+                return RepairResult(
+                    name=action.name,
+                    status=RepairStatus.CANCELLED,
+                    message=(
+                        "Repair action requires "
+                        "explicit confirmation."
+                    ),
+                )
+
+        # ----------------------------------------------------
+        # Execute repair
+        # ----------------------------------------------------
 
         try:
 
-            data = action.function()
+            result = action.function()
 
-            completed = datetime.now()
-
-            result.status = RepairStatus.COMPLETED
-            result.message = (
-                "Repair action completed successfully."
+            return RepairResult(
+                name=action.name,
+                status=RepairStatus.COMPLETED,
+                message=(
+                    "Repair action completed successfully."
+                ),
+                data=result,
             )
-            result.data = data
-            result.completed_at = completed.isoformat(
-                timespec="seconds"
-            )
-            result.duration_seconds = round(
-                (
-                    completed - started
-                ).total_seconds(),
-                2
-            )
-
-            return result
 
         except Exception as error:
 
-            completed = datetime.now()
-
-            result.status = RepairStatus.FAILED
-            result.message = (
-                "Repair action failed."
+            return RepairResult(
+                name=action.name,
+                status=RepairStatus.FAILED,
+                message="Repair action failed.",
+                error=str(error),
             )
-            result.error = str(error)
-            result.completed_at = completed.isoformat(
-                timespec="seconds"
-            )
-            result.duration_seconds = round(
-                (
-                    completed - started
-                ).total_seconds(),
-                2
-            )
-
-            return result
