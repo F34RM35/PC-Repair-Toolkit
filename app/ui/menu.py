@@ -1,3 +1,4 @@
+from app.core import result
 from app.core.session_storage import list_sessions, load_session
 
 
@@ -286,3 +287,5 @@ def show_repair_menu(manager):
 
     print()
     print("=" * 60)
+    
+    return result

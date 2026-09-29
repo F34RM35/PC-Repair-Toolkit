@@ -3,14 +3,22 @@ from app.core.result import DiagnosticStatus
 from app.core.session import create_session
 from app.core.machine import get_machine_info
 from app.reporting.report_builder import build_report
-from app.core.session_storage import save_session
+from app.core.session_storage import (
+    save_session,
+    update_session,
+)
 
-from app.core.repair import RepairAction, RepairRisk
-from app.core.repair_manager import RepairManager
 from app.core.repairs import (
     analyze_temp_files,
     clean_temp_files,
 )
+
+from app.core.repair import (
+    RepairAction,
+    RepairRisk,
+)
+
+from app.core.repair_manager import RepairManager
 
 from app.ui.menu import (
     show_header,
@@ -65,16 +73,32 @@ def run_diagnostic():
     print()
     print("REPAIR SESSION")
     print("-" * 60)
-    print(f"Session ID: {session['session_id']}")
-    print(f"Started:    {session['started_at']}")
+    print(
+        f"Session ID: {session['session_id']}"
+    )
+    print(
+        f"Started:    {session['started_at']}"
+    )
 
     print()
     print("MACHINE")
     print("-" * 60)
-    print(f"Hostname:     {machine['hostname']}")
-    print(f"OS:           {machine['operating_system']}")
-    print(f"OS Build:     {machine['os_version']}")
-    print(f"Architecture: {machine['architecture']}")
+
+    print(
+        f"Hostname:     {machine['hostname']}"
+    )
+
+    print(
+        f"OS:           {machine['operating_system']}"
+    )
+
+    print(
+        f"OS Build:     {machine['os_version']}"
+    )
+
+    print(
+        f"Architecture: {machine['architecture']}"
+    )
 
     print()
     print("Running diagnostics...")
@@ -103,14 +127,23 @@ def run_diagnostic():
         )
 
         if result.status != DiagnosticStatus.PASS:
+
             if result.message:
                 print(
                     f"    └─ {result.message}"
                 )
 
+    # --------------------------------------------------------
+    # BUILD INITIAL REPORT
+    # --------------------------------------------------------
+
     report = build_report(
         results,
-        session
+        session,
+        repairs=session.get(
+            "repairs",
+            []
+        ),
     )
 
     saved_file = save_session(
@@ -124,24 +157,72 @@ def run_diagnostic():
 
     summary = report["summary"]
 
-    print(f"Total Diagnostics: {summary['total']}")
-    print(f"PASS:              {summary['pass']}")
-    print(f"WARNING:           {summary['warning']}")
-    print(f"CRITICAL:          {summary['critical']}")
-    print(f"UNKNOWN:           {summary['unknown']}")
+    print(
+        f"Total Diagnostics: {summary['total']}"
+    )
+
+    print(
+        f"PASS:              {summary['pass']}"
+    )
+
+    print(
+        f"WARNING:           {summary['warning']}"
+    )
+
+    print(
+        f"CRITICAL:          {summary['critical']}"
+    )
+
+    print(
+        f"UNKNOWN:           {summary['unknown']}"
+    )
 
     print()
-    print(f"Report saved: {saved_file}")
+    print(
+        f"Report saved: {saved_file}"
+    )
 
     print()
     print("=" * 60)
     print("             DIAGNOSTIC COMPLETE")
     print("=" * 60)
 
+    # --------------------------------------------------------
+    # REPAIR ACTIONS
+    # --------------------------------------------------------
+
     repair_manager = create_repair_manager()
 
     print()
-    show_repair_menu(repair_manager)
+    repair_result = show_repair_menu(
+        repair_manager
+    )
+
+    # --------------------------------------------------------
+    # SAVE REPAIR RESULT
+    # --------------------------------------------------------
+
+    if repair_result is not None:
+
+        session["repairs"].append(
+            repair_result
+        )
+
+        updated_report = build_report(
+            results,
+            session,
+            repairs=session["repairs"],
+        )
+
+        update_session(
+            session["session_id"],
+            updated_report
+        )
+
+        print()
+        print(
+            "Repair history saved to session."
+        )
 
 
 def main():
@@ -182,13 +263,18 @@ def main():
         elif choice == "4":
 
             print()
-            print("Exiting PC Repair Toolkit...")
+            print(
+                "Exiting PC Repair Toolkit..."
+            )
+
             break
 
         else:
 
             print()
-            print("Invalid option. Please select 1-4.")
+            print(
+                "Invalid option. Please select 1-4."
+            )
 
 
 if __name__ == "__main__":

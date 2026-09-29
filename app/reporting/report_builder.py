@@ -34,18 +34,43 @@ def make_json_safe(value):
     return str(value)
 
 
-def build_report(results, session=None):
+def build_report(results, session=None, repairs=None):
+    """
+    Build the complete diagnostic report.
+
+    Repairs are stored inside the session object so that
+    repair history belongs to the specific repair session.
+    """
+
+    # Make a safe copy of the session data.
+    safe_session = make_json_safe(
+        session
+    )
+
+    # Ensure the session always has a repairs list.
+    if safe_session is None:
+        safe_session = {}
+
+    if repairs is not None:
+        safe_session["repairs"] = make_json_safe(
+            repairs
+        )
+    elif "repairs" not in safe_session:
+        safe_session["repairs"] = []
+
     report = {
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "session": make_json_safe(session),
+        "timestamp": datetime.now().isoformat(
+            timespec="seconds"
+        ),
+        "session": safe_session,
         "diagnostics": [],
         "summary": {
             "total": 0,
             "pass": 0,
             "warning": 0,
             "critical": 0,
-            "unknown": 0
-        }
+            "unknown": 0,
+        },
     }
 
     for result in results.values():
@@ -56,11 +81,16 @@ def build_report(results, session=None):
             "name": result.name,
             "status": status.value,
             "message": result.message,
-            "data": make_json_safe(result.data),
-            "error": result.error
+            "data": make_json_safe(
+                result.data
+            ),
+            "error": result.error,
         }
 
-        report["diagnostics"].append(diagnostic)
+        report["diagnostics"].append(
+            diagnostic
+        )
+
         report["summary"]["total"] += 1
 
         if status == DiagnosticStatus.PASS:

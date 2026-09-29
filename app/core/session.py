@@ -11,7 +11,8 @@ def create_session(machine=None):
     )
 
     return {
-        "session_id": session_id,
-        "started_at": now.isoformat(timespec="seconds"),
-        "machine": machine
-    }
+    "session_id": session_id,
+    "started_at": now.isoformat(timespec="seconds"),
+    "machine": machine,
+    "repairs": []
+}
